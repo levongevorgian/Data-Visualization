@@ -92,7 +92,7 @@ ggplot(merged_data, aes(x = PM2.5_AQI_Value, y = Annual_Lung_Cancer_Deaths, colo
   
   geom_text(aes(
     label = ifelse(Country %in% c("China", "India", "Japan"), Country, ""), 
-    size = ifelse(Country == "China", 4, 2)  # Make China's text larger
+    size = ifelse(Country == "China", 4, 2) 
   ), fontface = "bold", vjust = 0.55, color = 'black') +  
   
   labs(
