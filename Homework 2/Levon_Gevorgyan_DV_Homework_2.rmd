@@ -1,0 +1,201 @@
+---
+title: "Levon_Gevorgyan_DV_Homework_2"
+output: html_document
+date: "2025-02-16"
+---
+
+### libraries
+
+```{r}
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(ggrepel)
+library(viridis)
+```
+
+### datasets
+
+```{r}
+lung_cancer_data <- read.csv("lung_cancer_prediction_dataset.csv")
+air_pol <- read.csv("global_air_pollution_dataset.csv")
+```
+
+
+## Part 3. Use the datasets provided to create graphs
+
+### 1. Create a Boxplot of Lung Cancer Deaths Distribution. (Python & R)
+
+```{r}
+ggplot() + geom_boxplot(data=lung_cancer_data, aes(y=Annual_Lung_Cancer_Deaths)) + 
+  labs(title = "Boxplot of Lung Cancer Deaths", y = "Lung Cancer Deaths") 
+```
+
+### 2. Create a Histogram of PM2.5 AQI Values. (Python & R)
+
+```{r}
+ggplot() + 
+  geom_histogram(data=air_pol, aes(x=PM2.5_AQI_Value), binwidth = 10, color = 'black', fill = 'grey') +
+  labs(title = "Histogram of PM2.5 AQI Values", x = "PM2.5 AQI Values", y = "Frequency")
+```
+
+### 3. Create a Density Plot of the Lung Cancer Mortality Rate. (Python & R)
+
+```{r}
+ggplot() + 
+  geom_density(data=lung_cancer_data, aes(x=Mortality_Rate), color = 'darkred') +
+  labs(title = "Density Plot of Lung Cancer Mortality Rate", x = "Mortality Rate", y = "Density")
+```
+
+
+### 4. Create a Scatter Plot by generating 100 random values from both the normal and logistic distributions. The points should be brown and use theme_solarized with argument light set to false. (R, not related to the datasets provided)
+
+```{r}
+set.seed(123)
+
+n_data <- rnorm(100)
+l_data <- rlogis(100)
+all_data <- data.frame(n_data, l_data)
+
+ggplot() +
+  geom_point(data=all_data, aes(x = n_data, y = l_data), color = 'brown') +
+  theme_solarized(light = FALSE) +
+  labs(title = "Scatter Plot of Normal and Logistic Distributions", x = "Normal Data", y = "Logistic Data")
+```
+
+## Part 4. Recreate the following graphs
+
+### 2. Use the gpplot2 package for this graph. (Hint: Aggregate the data then merge the two datasets. Use only the necessary columns.)
+
+```{r}
+air_pollution_agg <- air_pol %>%
+  group_by(Country) %>%
+  summarize(PM2.5_AQI_Value = mean(PM2.5_AQI_Value, na.rm = TRUE)) %>%
+  ungroup()
+
+lung_cancer_agg <- lung_cancer_data %>%
+  group_by(Country) %>%
+  summarize(Annual_Lung_Cancer_Deaths = sum(Annual_Lung_Cancer_Deaths, na.rm = TRUE)) %>%
+  ungroup()
+
+merged_data <- inner_join(lung_cancer_agg, air_pollution_agg, by = "Country")
+
+wanted_countries <- c(
+  "Egypt", "Ethiopia", "France", "Germany", "India", 
+  "Indonesia", "Italy", "Japan", "Mexico", "Myanmar", 
+  "Nigeria", "Pakistan", "Philippines", "South Africa",
+  "Thailand", "Turkey"
+)
+
+ggplot(merged_data, aes(x = PM2.5_AQI_Value, y = Annual_Lung_Cancer_Deaths, color = Country)) +
+  geom_point(aes(size = ifelse(Country == "China", 5, 1)), alpha = 0.7) +  
+  
+  geom_text(aes(
+    label = ifelse(Country %in% c("China", "India", "Japan"), Country, ""), 
+    size = ifelse(Country == "China", 4, 2)  # Make China's text larger
+  ), fontface = "bold", vjust = 0.55, color = 'black') +  
+  
+  labs(
+    title = "PM2.5 AQI vs. Annual Lung Cancer Deaths",
+    x = "PM2.5 AQI Value",
+    y = "Annual Lung Cancer Deaths",
+    caption = "Annual_Lung_Cancer_Deaths"
+  ) +
+  
+  theme_minimal() +
+  
+  theme(
+    plot.title = element_text(color = "brown", face = "bold", size = 15),
+    axis.title.x = element_text(color = "black", size = 10),
+    axis.title.y = element_text(color = "black", size = 10),
+    axis.text.x = element_text(angle = 45, hjust = 1, color = 'blue', size = 7),
+    legend.title = element_blank(),
+    legend.text = element_text(size = 10),
+    legend.position = "right",
+    legend.key.height = unit(0.6, "cm"),
+    panel.grid.major = element_line(linetype = "dashed", color = "grey", size = 0.15),
+    panel.grid.minor = element_line(linetype = "dashed", color = "lightgrey", size = 0.05),
+    panel.border = element_rect(color = "black", fill = NA, size = 0.5),
+    plot.caption = element_text(hjust = 2.3, size = 8),
+    plot.background = element_rect(fill = "#F7F7F7", color = "black", size = 0.5),
+  ) +
+  
+  scale_size_identity() +
+  scale_color_discrete(breaks = wanted_countries)
+```
+
+### 3. Use the ggplot2 package for this graph. (Hint: use geom_jitter since y axis contains categorical data, also use the following colors: #5469f1 , #d554f1)
+
+```{r}
+lung_data_filtered <- lung_cancer_data %>%
+  filter(Cancer_Stage != "None")
+
+ggplot(lung_data_filtered, aes(x = Years_of_Smoking, y = Cancer_Stage, color = Gender, shape = Gender)) +
+  
+  geom_jitter(width = 0.2, alpha = 0.4, size = 1) +
+  
+  scale_color_manual(values = c("Female" = "#d554f1", "Male" = "#5469f1")) +
+  scale_y_discrete(expand = expansion(mult = 0.05)) +
+  scale_shape_manual(values = c("Female" = 17, "Male" = 16)) +
+  
+  facet_grid(. ~ Gender) +
+  
+  labs(
+    title = "Lung Cancer Stage vs. Smoking Years",
+    subtitle = "Comparison by Gender",
+    x = "Years of Smoking",
+    y = "Cancer Stage"
+  ) +
+  
+  theme_minimal() +
+  
+  theme(
+     axis.title.y = element_text(color = "black", size = 8),
+    axis.title.x = element_text(color = "black", size = 10),
+    axis.text.x = element_text(size = 7),
+    strip.text = element_text(face = "bold"),
+    plot.title = element_text(face = "bold", size = 10),
+    plot.subtitle = element_text(face = "italic", size = 8.5),
+    axis.title = element_text(size = 12),
+    legend.position = "bottom",
+    plot.background = element_rect(fill = "white", color = "black", size = 0.5)
+  )
+```
+
+### 4. Use the ggplot2 package for this graph. (Hint: use scale_fill_viridis_d(option = "plasma" to get the same colors)
+
+```{r}
+selected_countries <- c("Brazil", "India", "Russian Federation", "Germany", "Italy", "United States of America")
+filtered_data <- air_pol %>% filter(Country %in% selected_countries)
+
+ggplot(filtered_data, aes(x = PM2.5_AQI_Value, fill = Country)) +
+  geom_histogram(bins = 30, alpha = 0.8, color = "black", size = 0.2) +  
+  
+  facet_wrap(~Country, scales = "free_y") +  
+  scale_fill_viridis_d(option = "plasma") + 
+  
+  theme_minimal()+ 
+  
+  labs(
+    title = "PM2.5 AQI Distribution Across Countries",
+    subtitle = "Comparison of Air Pollution Levels",
+    x = "PM2.5 AQI Value",
+    y = "Frequency",
+    fill = "Country"
+  ) +
+  
+  theme(
+    plot.title = element_text(size = 10, face = "bold"),  
+    plot.subtitle = element_text(size =7, face = "italic"),  
+    legend.position = "bottom", 
+    legend.key.size = unit(0.2, "cm"), 
+    legend.text = element_text(size = 6),
+    legend.title = element_text(size = 8), 
+    axis.title.x = element_text(size = 5),
+    axis.title.y = element_text(size = 5),
+    axis.text.x = element_text(size = 5),
+    axis.text.y = element_text(size = 5),
+    strip.text = element_text(face = "bold", size = 7),
+    plot.background = element_rect(fill = "white", color = "black", size = 0.5)
+  ) 
+```
